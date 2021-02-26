@@ -4,7 +4,7 @@
 # SSL:  https://www.openssl.org/source/
 # ZLIB: https://www.zlib.net/
 : ${PERL_VERSION:=5.32.1}
-: ${OPENSSL_VERSION:=1.1.1i}
+: ${OPENSSL_VERSION:=1.1.1j}
 : ${ZLIB_VERSION:=1.2.11}
 
 : ${BUILDER_NAME="Guillaume Bougard (teclib)"}
@@ -77,8 +77,8 @@ build_static_zlib () {
     [ -d "zlib-$ZLIB_VERSION" ] || tar xzf "$ARCHIVE"
     [ -d "$ROOT/build/zlib" ] || mkdir -p "$ROOT/build/zlib"
     cd "$ROOT/build/zlib"
-    [ -e Makefile ] || CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" ../../zlib-$ZLIB_VERSION/configure --static \
-        --libdir="$PWD" --includedir="$PWD"
+    [ -e Makefile ] || CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET --arch=x86_64 --arch=arm64" \
+        ../../zlib-$ZLIB_VERSION/configure --static --libdir="$PWD" --includedir="$PWD"
     make libz.a
 }
 
@@ -114,11 +114,15 @@ build_perl () {
     fi
     if [ ! -e Makefile ]; then
         rm -f config.sh Policy.sh
+        SDK=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
+        ccflags="-arch x86_64 -arch arm64 -nostdinc -B$SDK/usr/include/gcc"
+        ccflags="$ccflags -B$SDK/usr/lib/gcc -isystem$SDK/usr/include -F$SDK/System/Library/Frameworks"
         ./Configure -de -Dprefix=$BUILD_PREFIX -Duserelocatableinc -DNDEBUG    \
             -Dman1dir=none -Dman3dir=none -Dusethreads -UDEBUGGING             \
             -Dusemultiplicity -Duse64bitint -Duse64bitall                      \
             -Aeval:privlib=.../../lib -Aeval:scriptdir=.../../bin              \
             -Aeval:vendorprefix=.../.. -Aeval:vendorlib=.../../agent           \
+            -Accflags="$ccflags" -Aldflags="-Wl,-syslibroot,$SDK"              \
             -Dcf_by="$BUILDER_NAME" -Dcf_email="$BUILDER_MAIL" -Dperladmin="$BUILDER_MAIL"
     fi
     make -j4
@@ -173,7 +177,8 @@ if [ ! -d "build/openssl-$OPENSSL_VERSION" ]; then
     [ -d build/openssl ] || mkdir -p build/openssl
     cd build/openssl
 
-    CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" ../../openssl-$OPENSSL_VERSION/config no-autoerrinit no-shared \
+    CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -arch x86_64 -arch arm64" \
+    ../../openssl-$OPENSSL_VERSION/config no-autoerrinit no-shared \
         --prefix="/openssl" $OPENSSL_CONFIG_OPTS
     make
 
@@ -320,7 +325,7 @@ cat >build-info.plist <<-BUILD_INFO
 		<key>install_location</key>
 		<string>/</string>
 		<key>name</key>
-		<string>GLPI-Agent-${VERSION}_$ARCH.pkg</string>
+		<string>GLPI-Agent-${VERSION}.pkg</string>
 		<key>ownership</key>
 		<string>recommended</string>
 		<key>postinstall_action</key>
@@ -344,10 +349,6 @@ cat >product-requirements.plist <<-REQUIREMENTS
 	    <array>
 	        <string>10.10</string>
 	    </array>
-	    <key>arch</key>
-	    <array>
-	        <string>$ARCH</string>
-	    </array>
 	</dict>
 	</plist>
 REQUIREMENTS
@@ -355,8 +356,8 @@ REQUIREMENTS
 echo "Build package"
 ./munkipkg .
 
-PKG="GLPI-Agent-${VERSION}_$ARCH.pkg"
-DMG="GLPI-Agent-${VERSION}_$ARCH.dmg"
+PKG="GLPI-Agent-${VERSION}.pkg"
+DMG="GLPI-Agent-${VERSION}.dmg"
 
 echo "Prepare distribution installer..."
 cat >Distribution.xml <<-CUSTOM
@@ -368,7 +369,7 @@ cat >Distribution.xml <<-CUSTOM
 	    <background file="background.png" uti="public.png" alignment="bottomleft"/>
 	    <background-darkAqua file="background.png" uti="public.png" alignment="bottomleft"/>
 	    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
-	    <options customize="never" require-scripts="false" hostArchitectures="$ARCH"/>
+	    <options customize="never" require-scripts="false"/>
 	    <choices-outline>
 	        <line choice="default">
 	            <line choice="org.glpi-project.glpi-agent"/>
