@@ -1,3 +1,9 @@
+glpi-agent (1:1.0-test17) unstable; urgency=medium
+
+  * New upstream release 1.0-test17
+
+ -- Guillaume Bougard <gbougard@teclib.com>  Fri, 26 Feb 2021 14:41:16 +0100
+
 glpi-agent (1:1.0-1) unstable; urgency=medium
 
   * Adapted fusioninventory-agent packaging to glpi-agent

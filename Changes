@@ -1,6 +1,6 @@
 Revision history for GLPI agent
 
-1.0 not released yet
+1.0-test17 Fri, 26 Feb 2021
 
 core:
 * make internal HTTP server more responsive
@@ -15,9 +15,12 @@ inventory:
 * Added Acer monitor serial support (K272HL, ET221Q, AL1716, V193W, V173AB)
 * win32: Fix cpu analysis to support inventory of different cpus
 * win32: Refactor cpu analysis to make dmidecode safer to use under win32
+* Updated pci.ids to 2021.02.23 version
+* Updated usb.ids to 2021.02.19 version
 
 netdiscovery/netinventory:
 * Add support for SonicWall devices
+* Updated sysobject.ids
 
 packaging:
 * Windows MSI installer based on StrawBerry Perl 5.32.1
