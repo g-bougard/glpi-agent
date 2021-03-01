@@ -13,13 +13,36 @@
 set -e
 
 export LC_ALL=C LANG=C
-export MACOSX_DEPLOYMENT_TARGET=10.10
 
 # Check platform we are running on
 ARCH=$(uname -m)
+
+while [ -n "$1" ]
+do
+    case "$1" in
+        --arch|-a)
+            shift
+            ARCH="$1"
+            ;;
+        --help|-h)
+            cat <<HELP
+$0 [-a|--arch] [x86_64|arm64] [-h|--help]
+    -a --arch       Specify target arch: x86_64 or arm64
+    -h --help       This help
+HELP
+            ;;
+    esac
+    shift
+done
+
 case "$(uname -s) $ARCH" in
     Darwin*x86_64)
-        echo "GLPI-Agent MacOSX Packaging for $ARCH..."
+        echo "GLPI-Agent MacOSX Packaging for Intel x86_64..."
+        export MACOSX_DEPLOYMENT_TARGET=10.10
+        ;;
+    Darwin*arm64)
+        echo "GLPI-Agent MacOSX Packaging for Apple Silicon..."
+        export MACOSX_DEPLOYMENT_TARGET=11.0
         ;;
     Darwin*)
         echo "$ARCH support is missing, please report an issue" >&2
@@ -77,7 +100,7 @@ build_static_zlib () {
     [ -d "zlib-$ZLIB_VERSION" ] || tar xzf "$ARCHIVE"
     [ -d "$ROOT/build/zlib" ] || mkdir -p "$ROOT/build/zlib"
     cd "$ROOT/build/zlib"
-    [ -e Makefile ] || CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET --arch=x86_64 --arch=arm64" \
+    [ -e Makefile ] || CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET --arch=$ARCH" \
         ../../zlib-$ZLIB_VERSION/configure --static --libdir="$PWD" --includedir="$PWD"
     make libz.a
 }
@@ -114,15 +137,13 @@ build_perl () {
     fi
     if [ ! -e Makefile ]; then
         rm -f config.sh Policy.sh
-        SDK=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
-        ccflags="-arch x86_64 -arch arm64 -nostdinc -B$SDK/usr/include/gcc"
-        ccflags="$ccflags -B$SDK/usr/lib/gcc -isystem$SDK/usr/include -F$SDK/System/Library/Frameworks"
+        ccflags="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET --arch=$ARCH"
         ./Configure -de -Dprefix=$BUILD_PREFIX -Duserelocatableinc -DNDEBUG    \
             -Dman1dir=none -Dman3dir=none -Dusethreads -UDEBUGGING             \
             -Dusemultiplicity -Duse64bitint -Duse64bitall                      \
             -Aeval:privlib=.../../lib -Aeval:scriptdir=.../../bin              \
             -Aeval:vendorprefix=.../.. -Aeval:vendorlib=.../../agent           \
-            -Accflags="$ccflags" -Aldflags="-Wl,-syslibroot,$SDK"              \
+            -Accflags="$ccflags"                                               \
             -Dcf_by="$BUILDER_NAME" -Dcf_email="$BUILDER_MAIL" -Dperladmin="$BUILDER_MAIL"
     fi
     make -j4
@@ -177,7 +198,7 @@ if [ ! -d "build/openssl-$OPENSSL_VERSION" ]; then
     [ -d build/openssl ] || mkdir -p build/openssl
     cd build/openssl
 
-    CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -arch x86_64 -arch arm64" \
+    CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -arch $ARCH" \
     ../../openssl-$OPENSSL_VERSION/config no-autoerrinit no-shared \
         --prefix="/openssl" $OPENSSL_CONFIG_OPTS
     make
@@ -313,74 +334,78 @@ sed -i .7.bak -Ee "s/^#?include \"conf\.d\/\"/include \"conf.d\"/" $AGENT_CFG
 rm -f $AGENT_CFG*.bak
 
 echo "Create build-info.plist..."
-cat >build-info.plist <<-BUILD_INFO
-	<?xml version="1.0" encoding="UTF-8"?>
-	<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-	<plist version="1.0">
-	<dict>
-		<key>distribution_style</key>
-		<false/>
-		<key>identifier</key>
-		<string>org.glpi-project.glpi-agent</string>
-		<key>install_location</key>
-		<string>/</string>
-		<key>name</key>
-		<string>GLPI-Agent-${VERSION}.pkg</string>
-		<key>ownership</key>
-		<string>recommended</string>
-		<key>postinstall_action</key>
-		<string>none</string>
-		<key>preserve_xattr</key>
-		<false/>
-		<key>suppress_bundle_relocation</key>
-		<true/>
-		<key>version</key>
-		<string>$VERSION</string>
-	</dict>
-	</plist>
+cat >build-info.plist <<BUILD_INFO
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>distribution_style</key>
+    <false/>
+    <key>identifier</key>
+    <string>org.glpi-project.glpi-agent</string>
+    <key>install_location</key>
+    <string>/</string>
+    <key>name</key>
+    <string>GLPI-Agent-${VERSION}_$ARCH.pkg</string>
+    <key>ownership</key>
+    <string>recommended</string>
+    <key>postinstall_action</key>
+    <string>none</string>
+    <key>preserve_xattr</key>
+    <false/>
+    <key>suppress_bundle_relocation</key>
+    <true/>
+    <key>version</key>
+    <string>$VERSION</string>
+</dict>
+</plist>
 BUILD_INFO
 
-cat >product-requirements.plist <<-REQUIREMENTS
-	<?xml version="1.0" encoding="UTF-8"?>
-	<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-	<plist version="1.0">
-	<dict>
-	    <key>os</key>
-	    <array>
-	        <string>10.10</string>
-	    </array>
-	</dict>
-	</plist>
+cat >product-requirements.plist <<REQUIREMENTS
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>os</key>
+    <array>
+        <string>$MACOSX_DEPLOYMENT_TARGET</string>
+    </array>
+        <key>arch</key>
+        <array>
+            <string>$ARCH</string>
+        </array>
+</dict>
+</plist>
 REQUIREMENTS
 
 echo "Build package"
 ./munkipkg .
 
-PKG="GLPI-Agent-${VERSION}.pkg"
-DMG="GLPI-Agent-${VERSION}.dmg"
+PKG="GLPI-Agent-${VERSION}_$ARCH.pkg"
+DMG="GLPI-Agent-${VERSION}_$ARCH.dmg"
 
 echo "Prepare distribution installer..."
-cat >Distribution.xml <<-CUSTOM
-	<?xml version="1.0" encoding="utf-8" standalone="no"?>
-	<installer-gui-script minSpecVersion="2">
-	    <title>GLPI-Agent $VERSION</title>
-	    <pkg-ref id="org.glpi-project.glpi-agent" version="$VERSION" onConclusion="none">$PKG</pkg-ref>
-	    <license file="License.txt" mime-type="text/plain" />
-	    <background file="background.png" uti="public.png" alignment="bottomleft"/>
-	    <background-darkAqua file="background.png" uti="public.png" alignment="bottomleft"/>
-	    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
-	    <options customize="never" require-scripts="false"/>
-	    <choices-outline>
-	        <line choice="default">
-	            <line choice="org.glpi-project.glpi-agent"/>
-	        </line>
-	    </choices-outline>
-	    <choice id="default"/>
-	    <choice id="org.glpi-project.glpi-agent" visible="false">
-	        <pkg-ref id="org.glpi-project.glpi-agent"/>
-	    </choice>
-	    <os-version min="10.10" />
-	</installer-gui-script>
+cat >Distribution.xml <<CUSTOM
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-gui-script minSpecVersion="2">
+    <title>GLPI-Agent $VERSION</title>
+    <pkg-ref id="org.glpi-project.glpi-agent" version="$VERSION" onConclusion="none">$PKG</pkg-ref>
+    <license file="License.txt" mime-type="text/plain" />
+    <background file="background.png" uti="public.png" alignment="bottomleft"/>
+    <background-darkAqua file="background.png" uti="public.png" alignment="bottomleft"/>
+    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+    <options customize="never" require-scripts="false"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="org.glpi-project.glpi-agent"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="org.glpi-project.glpi-agent" visible="false">
+        <pkg-ref id="org.glpi-project.glpi-agent"/>
+    </choice>
+    <os-version min="$MACOSX_DEPLOYMENT_TARGET" />
+</installer-gui-script>
 CUSTOM
 productbuild --product product-requirements.plist --distribution Distribution.xml \
     --package-path "build" --resources "Resources" "build/Dist-$PKG"
