@@ -150,7 +150,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        arch: [ x86-64, arm64 ]
+        arch: [ x86-64 ]
 
     if: always()
     needs: create-release
