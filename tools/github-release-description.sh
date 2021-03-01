@@ -27,6 +27,8 @@ Arch | Package
 ---|:---
 x86_64 | PKG: [GLPI-Agent-${TAG}_x86_64.pkg](../../releases/download/$TAG/GLPI-Agent-${TAG}_x86_64.pkg)
 x86_64 | DMG: [GLPI-Agent-${TAG}_x86_64.dmg](../../releases/download/$TAG/GLPI-Agent-${TAG}_x86_64.dmg)
+arm64 | PKG: [GLPI-Agent-${TAG}_arm64.pkg](../../releases/download/$TAG/GLPI-Agent-${TAG}_arm64.pkg)
+arm64 | DMG: [GLPI-Agent-${TAG}_arm64.dmg](../../releases/download/$TAG/GLPI-Agent-${TAG}_arm64.dmg)
 
 ## Linux
 

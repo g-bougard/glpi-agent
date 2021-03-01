@@ -187,7 +187,7 @@ jobs:
         path: |
           contrib/macosx/build/*.pkg
           contrib/macosx/build/*.dmg
-    - name: Upload MacOSX PKG installer
+    - name: Upload MacOSX PKG ${{ matrix.arch }} installer
       id: upload-macosx-pkg-asset
       if: startsWith(github.ref, 'refs/tags/1.')
       uses: actions/upload-release-asset@v1
@@ -195,10 +195,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: contrib/macosx/build/GLPI-Agent-${{ needs.create-release.outputs.tag }}.pkg
-        asset_name: GLPI-Agent-${{ needs.create-release.outputs.tag }}.pkg
+        asset_path: contrib/macosx/build/GLPI-Agent-${{ needs.create-release.outputs.tag }}_${{ matrix.arch }}.pkg
+        asset_name: GLPI-Agent-${{ needs.create-release.outputs.tag }}_${{ matrix.arch }}.pkg
         asset_content_type: application/octet-stream
-    - name: Upload MacOSX DMG installer image
+    - name: Upload MacOSX DMG ${{ matrix.arch }} installer image
       id: upload-macosx-dmg-asset
       if: startsWith(github.ref, 'refs/tags/1.')
       uses: actions/upload-release-asset@v1
@@ -206,8 +206,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: contrib/macosx/build/GLPI-Agent-${{ needs.create-release.outputs.tag }}.dmg
-        asset_name: GLPI-Agent-${{ needs.create-release.outputs.tag }}.dmg
+        asset_path: contrib/macosx/build/GLPI-Agent-${{ needs.create-release.outputs.tag }}_${{ matrix.arch }}.dmg
+        asset_name: GLPI-Agent-${{ needs.create-release.outputs.tag }}_${{ matrix.arch }}.dmg
         asset_content_type: application/octet-stream
 
   linux-snap-packaging:
