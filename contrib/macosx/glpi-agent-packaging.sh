@@ -26,8 +26,8 @@ do
             ;;
         --help|-h)
             cat <<HELP
-$0 [-a|--arch] [x86_64|arm64] [-h|--help]
-    -a --arch       Specify target arch: x86_64 or arm64
+$0 [-a|--arch] [x86-64|arm64] [-h|--help]
+    -a --arch       Specify target arch: x86-64 or arm64
     -h --help       This help
 HELP
             ;;
@@ -36,13 +36,13 @@ HELP
 done
 
 case "$(uname -s) $ARCH" in
-    Darwin*x86_64)
+    Darwin*x86*64)
         echo "GLPI-Agent MacOSX Packaging for Intel x86_64..."
-        export MACOSX_DEPLOYMENT_TARGET=10.10
+        export MACOSX_DEPLOYMENT_TARGET=10.10 ARCH=x86-64 OPENSSL_CONFIG=darwin64-x86_64-cc
         ;;
     Darwin*arm64)
         echo "GLPI-Agent MacOSX Packaging for Apple Silicon..."
-        export MACOSX_DEPLOYMENT_TARGET=11.0
+        export MACOSX_DEPLOYMENT_TARGET=11.0 OPENSSL_CONFIG=darwin64-arm64-cc
         ;;
     Darwin*)
         echo "$ARCH support is missing, please report an issue" >&2
@@ -100,7 +100,7 @@ build_static_zlib () {
     [ -d "zlib-$ZLIB_VERSION" ] || tar xzf "$ARCHIVE"
     [ -d "$ROOT/build/zlib" ] || mkdir -p "$ROOT/build/zlib"
     cd "$ROOT/build/zlib"
-    [ -e Makefile ] || CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET --arch=$ARCH" \
+    [ -e Makefile ] || CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -march=$ARCH" \
         ../../zlib-$ZLIB_VERSION/configure --static --libdir="$PWD" --includedir="$PWD"
     make libz.a
 }
@@ -137,7 +137,7 @@ build_perl () {
     fi
     if [ ! -e Makefile ]; then
         rm -f config.sh Policy.sh
-        ccflags="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET --arch=$ARCH"
+        ccflags="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -march=$ARCH"
         ./Configure -de -Dprefix=$BUILD_PREFIX -Duserelocatableinc -DNDEBUG    \
             -Dman1dir=none -Dman3dir=none -Dusethreads -UDEBUGGING             \
             -Dusemultiplicity -Duse64bitint -Duse64bitall                      \
@@ -198,8 +198,8 @@ if [ ! -d "build/openssl-$OPENSSL_VERSION" ]; then
     [ -d build/openssl ] || mkdir -p build/openssl
     cd build/openssl
 
-    CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET -arch $ARCH" \
-    ../../openssl-$OPENSSL_VERSION/config no-autoerrinit no-shared \
+    CFLAGS="-mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET" \
+    ../../openssl-$OPENSSL_VERSION/Configure $OPENSSL_CONFIG no-autoerrinit no-shared \
         --prefix="/openssl" $OPENSSL_CONFIG_OPTS
     make
 

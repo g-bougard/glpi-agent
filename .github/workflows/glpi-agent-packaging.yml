@@ -150,7 +150,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        arch: [ x86_64, arm64 ]
+        arch: [ x86-64, arm64 ]
 
     if: always()
     needs: create-release
@@ -179,7 +179,7 @@ jobs:
       run: |
         ls contrib/macosx/build
       shell: bash
-    - name: Upload MacOSX built artifacts
+    - name: Upload MacOSX ${{ matrix.arch }} built artifacts
       if: success() || failure()
       uses: actions/upload-artifact@v2
       with:
