@@ -342,6 +342,13 @@ sub runTarget {
                             $self->{config}->{"no-category"} = $no_category;
                         }
                     }
+                # Handle deploy config task page configuration
+                } elsif ($task eq "deploy") {
+                    # Always delete current deploy_config_page config as it may be related to another server
+                    delete $self->{config}->{"deploy_config_page"};
+                    # Handle deploy_config_page set by server to be able to set remote URL for the task
+                    $self->{config}->{"deploy_config_page"} = $tasks->{deploy}->{"deploy_config_page"}
+                        if $tasks->{deploy}->{"deploy_config_page"};
                 }
             }
         }

@@ -441,8 +441,17 @@ sub run {
         config  => $self->{config},
     );
 
+    # Use computed config url if set from deploy_config_page info provided by GLPI with deploy task support
+    my $getConfigUrl = $self->{target}->getUrl();
+    if ($self->{config}->{deploy_config_page}) {
+        # deploy_config_page is relative to current target server url
+        $getConfigUrl .= '/' unless $getConfigUrl =~ m{/$};
+        $self->{config}->{deploy_config_page} =~ s{^/+}{};
+        $getConfigUrl .= $self->{config}->{deploy_config_page};
+    }
+
     my $globalRemoteConfig = $self->{client}->send(
-        url  => $self->{target}->getUrl(),
+        url  => $getConfigUrl,
         args => {
             action    => "getConfig",
             machineid => $self->{deviceid},
