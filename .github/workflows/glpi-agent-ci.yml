@@ -6,6 +6,9 @@ name: GLPI Agent CI
 
 on:
   push:
+    # Don't run tests on build testing branches
+    branches-ignore:
+      - build/**
   pull_request:
     branches:
       - develop
