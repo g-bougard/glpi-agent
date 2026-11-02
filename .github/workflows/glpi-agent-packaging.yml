@@ -186,7 +186,7 @@ jobs:
 
   linux-snap-packaging:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     if: ${{ needs.setup-release.outputs.build == 'yes' }}
     needs: setup-release
