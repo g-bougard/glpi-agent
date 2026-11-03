@@ -161,7 +161,7 @@ parts:
   glpi-agent:
     after: [perl]
     plugin: make
-    source: .
+    source: ../../..
     override-build: |
       export PATH=$SNAPCRAFT_STAGE/usr/share/glpi-agent/bin:$PATH
       if [ -z "$VERSION" ]; then
