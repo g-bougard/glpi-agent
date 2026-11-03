@@ -193,11 +193,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-    - uses: g-bougard/action-build@master
+    - uses: canonical/snapcraft-multiarch-action@v1
       id: snapcraft
       with:
+        path: contrib/unix/snap
         snapcraft-channel: 8.x/stable
-        snapcraft-args: pack
       env:
         TERM: ${{ env.TERM }}:${{ needs.setup-release.outputs.version }}
     - name: Upload Snap built artifacts
