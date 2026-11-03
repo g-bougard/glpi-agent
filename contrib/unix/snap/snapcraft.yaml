@@ -141,14 +141,14 @@ parts:
      - libssh2-1-dev
      - swig
     stage-packages:
-     - libcupsimage2
-     - libcupsfilters1
-     - libcups2
-     - libssl1.1
+     - libcupsimage2t64
+     - libcupsfilters2t64
+     - libcups2t64
+     - libssl3t64
      - libxml2
      - libavahi-client3
      - libavahi-common3
-     - libssh2-1
+     - libssh2-1t64
     stage:
       - usr/lib
       - usr/share/glpi-agent/bin/perl
