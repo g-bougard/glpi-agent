@@ -197,9 +197,8 @@ jobs:
       id: snapcraft
       with:
         path: contrib/unix/snap
-        snapcraft-channel: 8.x/stable
-      env:
-        TERM: ${{ env.TERM }}:${{ needs.setup-release.outputs.version }}
+        environnement: |
+          VERSION=${{ needs.setup-release.outputs.version }}
     - name: Upload Snap built artifacts
       uses: actions/upload-artifact@v7
       with:
