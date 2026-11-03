@@ -186,7 +186,12 @@ jobs:
 
   linux-snap-packaging:
 
-    runs-on: ubuntu-26.04
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.runner }}
 
     if: ${{ needs.setup-release.outputs.build == 'yes' }}
     needs: setup-release
