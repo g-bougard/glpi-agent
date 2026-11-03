@@ -199,7 +199,7 @@ jobs:
       timeout-minutes: 20
       with:
         path: contrib/unix/snap
-        environnement: |
+        environment: |
           VERSION=${{ needs.setup-release.outputs.version }}
     - name: Upload Snap built artifacts
       uses: actions/upload-artifact@v7
