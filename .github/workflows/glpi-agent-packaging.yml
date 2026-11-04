@@ -15,15 +15,6 @@ on:
   pull_request:
     branches:
       - develop
-  schedule:
-    - cron: '10 1 * * *'
-  workflow_dispatch:
-    inputs:
-      nightly:
-        description: 'Nightly publishing'
-        required: true
-        default: true
-        type: boolean
 
 jobs:
   setup-release:
@@ -37,54 +28,15 @@ jobs:
       tag_name: ${{ steps.set-version.outputs.tag_name }}
       build: ${{ steps.set-version.outputs.build }}
       releaseid: ${{ steps.create-tagged-release.outputs.id }}
-      user-name: ${{ steps.set-version.outputs.user-name }}
-      user-email: ${{ steps.set-version.outputs.user-email }}
-      win32-signing: ${{ steps.set-version.outputs.win32-signing }}
-      macosx-signing: ${{ steps.set-version.outputs.macosx-signing }}
-      macosx-notarization: ${{ steps.set-version.outputs.macosx-notarization }}
-      rpm-signing: ${{ steps.set-version.outputs.rpm-signing }}
+      build1: ${{ steps.set-version.outputs.test1 }}
+      build2: ${{ steps.set-version.outputs.test2 }}
 
     steps:
     - uses: actions/checkout@v6
     - name: Set version
       id: set-version
       run: |
-        if [ "${{ vars.WIN32_SIGNING }}" == "no" ]; then
-            echo "win32-signing=no" >>$GITHUB_OUTPUT
-        elif [ -n "$CODESIGN_HOST" ]; then
-            echo "win32-signing=yes" >>$GITHUB_OUTPUT
-        else
-            echo "win32-signing=no" >>$GITHUB_OUTPUT
-        fi
-        if [ "${{ vars.RPM_SIGNING }}" == "no" ]; then
-            RPM_SIGNING="no"
-        elif [ -n "$RPMSIGN_HOST" ]; then
-            RPM_SIGNING="yes"
-        else
-            RPM_SIGNING="no"
-        fi
-        if [ -n "$APPSIGNID" -a -n "$INSTSIGNID" ]; then
-            echo "macosx-signing=yes" >>$GITHUB_OUTPUT
-            if [ "${{ env.macosx_notarize_support }}" == "yes" -a "${{ vars.MACOSX_NOTARIZE }}" != "no" ]; then
-                NOTARIZE="yes"
-            else
-                NOTARIZE="no"
-            fi
-        else
-            echo "macosx-signing=no" >>$GITHUB_OUTPUT
-            NOTARIZE="no"
-        fi
         if [ -z "${GITHUB_REF##*refs/tags/*}" ]; then
-            # Abort publishing if MACOSX_SIGNING variable was set to "no"
-            if [ "${{ vars.MACOSX_SIGNING }}" == "no" -a -n "$APPSIGNID" -a -n "$INSTSIGNID" ]; then
-                echo "MACOSX_SIGNING has been disabled in GH variables. Fix it before publishing." >&2
-                exit 1
-            fi
-            # Abort publishing if MACOSX_NOTARIZE variable was set to "no"
-            if [ "${{ vars.MACOSX_NOTARIZE }}" == "no" -a "$NOTARIZE" == "yes" ]; then
-                echo "MACOSX_NOTARIZE has been disabled in GH variables. Fix it before publishing." >&2
-                exit 1
-            fi
             VERSION="${GITHUB_REF#*refs/tags/}"
             echo "New release on $VERSION $tag"
             echo "create-release=yes" >>$GITHUB_OUTPUT
@@ -127,8 +79,6 @@ jobs:
                 echo "create-release=no" >>$GITHUB_OUTPUT
                 echo "build=yes" >>$GITHUB_OUTPUT
                 echo "tag_name=development-$VERSION" >>$GITHUB_OUTPUT
-                NOTARIZE="no"
-                RPM_SIGNING="no"
             fi
         fi
         echo "version=$VERSION" >>$GITHUB_OUTPUT
@@ -150,27 +100,12 @@ jobs:
                 echo "prerelease=true" >>$GITHUB_OUTPUT
                 ;;
         esac
-        # Check if MacOSX packaging notarization is required
-        echo "macosx-notarization=$NOTARIZE" >>$GITHUB_OUTPUT
-        # Set user and mail for nightly release
-        echo "user-name=$(git log --format='%an' HEAD^!)" >>$GITHUB_OUTPUT
-        echo "user-email=$(git log --format='%ae' HEAD^!)" >>$GITHUB_OUTPUT
-        # Set if rpm-signing is required
-        echo "rpm-signing=$RPM_SIGNING" >>$GITHUB_OUTPUT
+        echo "test1=yes" >>$GITHUB_OUTPUT
+        echo "test2=yes" >>$GITHUB_OUTPUT
       shell: bash
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PUBLISHING_TOKEN: ${{ secrets.PUBLISHING_TOKEN }}
-        CODESIGN_HOST: ${{ secrets.CODESIGN_HOST }}
-        APPSIGNID: ${{ vars.MACOSX_APPSIGNID }}
-        INSTSIGNID: ${{ vars.MACOSX_INSTSIGNID }}
-        RPMSIGN_HOST: ${{ secrets.RPMSIGN_HOST }}
-    - name: Generate release description
-      id: github-release-body
-      if: ${{ steps.set-version.outputs.create-release == 'yes' }}
-      run: |
-        tools/github-release-description.sh --version ${{ steps.set-version.outputs.version }} --tag ${{ steps.set-version.outputs.tag_name }}
-      shell: bash
     - name: Create Tagged Release
       id: create-tagged-release
       uses: ncipollo/release-action@v1
@@ -195,7 +130,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
 
-    if: ${{ needs.setup-release.outputs.build == 'yes' }}
+    if: ${{ needs.setup-release.outputs.build1 == 'yes' }}
     needs: setup-release
 
     steps:
@@ -234,7 +169,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
 
-    if: ${{ needs.setup-release.outputs.build == 'yes' }}
+    if: ${{ needs.setup-release.outputs.build2 == 'yes' }}
     needs: setup-release
 
     steps:
@@ -263,3 +198,28 @@ jobs:
         asset_path: ${{ steps.snapcraft.outputs.snap }}
         asset_name: ${{ steps.snapcraft.outputs.snap }}
         asset_content_type: application/octet-stream
+
+  linux-snap-test-3:
+
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+
+    if: ${{ needs.setup-release.outputs.build == 'yes' }}
+    needs: setup-release
+
+    steps:
+    - uses: actions/checkout@v6
+    - uses: TerryHowe/action-build@edf78ca622b1eb99b69f09420bb19f77e4f84ac1
+      id: snapcraft
+      run: |
+        sudo snap install snapcraft --classic
+        sudo lxd init --auto
+        sudo snapcraft pack --use-lxd
+      env:
+        VERSION: ${{ needs.setup-release.outputs.version }}
