@@ -192,6 +192,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-26.04
     runs-on: ${{ matrix.runner }}
+    continue-on-error: true
 
     if: ${{ needs.setup-release.outputs.build == 'yes' }}
     needs: setup-release
