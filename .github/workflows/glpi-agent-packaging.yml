@@ -138,7 +138,6 @@ jobs:
     - uses: canonical/snapcraft-multiarch-action@v1
       id: snapcraft
       with:
-        path: contrib/unix/snap
         environment: |
           VERSION=${{ needs.setup-release.outputs.version }}
     - name: Upload Snap built artifacts
@@ -179,7 +178,6 @@ jobs:
       with:
         snapcraft-channel: 8.x/stable
         snapcraft-args: pack
-        path: contrib/unix/snap
       env:
         VERSION: ${{ needs.setup-release.outputs.version }}
     - name: Upload Snap built artifacts
