@@ -184,7 +184,7 @@ jobs:
         draft: true
         prerelease: ${{ steps.set-version.outputs.prerelease }}
 
-  linux-snap-packaging:
+  linux-snap-test-1:
 
     strategy:
       matrix:
@@ -205,6 +205,46 @@ jobs:
         path: contrib/unix/snap
         environment: |
           VERSION=${{ needs.setup-release.outputs.version }}
+    - name: Upload Snap built artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: Snap-Build
+        path: ${{ steps.snapcraft.outputs.snap }}
+    - name: Upload Snap Package
+      id: upload-linux-snap-asset
+      if: ${{ needs.setup-release.outputs.create-release == 'yes' }}
+      uses: shogo82148/actions-upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.setup-release.outputs.upload_url }}
+        asset_path: ${{ steps.snapcraft.outputs.snap }}
+        asset_name: ${{ steps.snapcraft.outputs.snap }}
+        asset_content_type: application/octet-stream
+
+  linux-snap-test-2:
+
+    strategy:
+      matrix:
+        runner:
+          - ubuntu-24.04
+          - ubuntu-26.04
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+
+    if: ${{ needs.setup-release.outputs.build == 'yes' }}
+    needs: setup-release
+
+    steps:
+    - uses: actions/checkout@v6
+    - uses: TerryHowe/action-build@edf78ca622b1eb99b69f09420bb19f77e4f84ac1
+      id: snapcraft
+      with:
+        snapcraft-channel: 8.x/stable
+        snapcraft-args: pack
+        path: contrib/unix/snap
+      env:
+        VERSION: ${{ needs.setup-release.outputs.version }}
     - name: Upload Snap built artifacts
       uses: actions/upload-artifact@v7
       with:
