@@ -30,6 +30,7 @@ jobs:
       releaseid: ${{ steps.create-tagged-release.outputs.id }}
       build1: ${{ steps.set-version.outputs.test1 }}
       build2: ${{ steps.set-version.outputs.test2 }}
+      build3: ${{ steps.set-version.outputs.test3 }}
 
     steps:
     - uses: actions/checkout@v6
@@ -102,6 +103,7 @@ jobs:
         esac
         echo "test1=yes" >>$GITHUB_OUTPUT
         echo "test2=no" >>$GITHUB_OUTPUT
+        echo "test3=no" >>$GITHUB_OUTPUT
       shell: bash
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -208,7 +210,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
 
-    if: ${{ needs.setup-release.outputs.build == 'yes' }}
+    if: ${{ needs.setup-release.outputs.build3 == 'yes' }}
     needs: setup-release
 
     steps:
