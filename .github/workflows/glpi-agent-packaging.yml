@@ -139,7 +139,9 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Check Snap Store reachability
-      run: curl -sS -m 20 -o /dev/null -w 'api.snapcraft.io: HTTP %{http_code} in %{time_total}s\n' https://api.snapcraft.io/ || true
+      run: |
+        curl -sS -m 20 -o /dev/null -w 'api.snapcraft.io: HTTP %{http_code} in %{time_total}s\n' https://api.snapcraft.io/ || true
+      shell: bash
     - uses: g-bougard/snapcraft-multiarch-action@8038048298e41a594aaeed264439782f50b108cd
       id: snapcraft
       timeout-minutes: 20
@@ -172,6 +174,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-26.04
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     continue-on-error: true
 
     if: ${{ needs.setup-release.outputs.build2 == 'yes' }}
@@ -181,6 +184,7 @@ jobs:
     - uses: actions/checkout@v6
     - uses: TerryHowe/action-build@edf78ca622b1eb99b69f09420bb19f77e4f84ac1
       id: snapcraft
+      timeout-minutes: 20
       with:
         snapcraft-channel: 8.x/stable
         snapcraft-args: pack
@@ -212,6 +216,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-26.04
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     continue-on-error: true
 
     if: ${{ needs.setup-release.outputs.build3 == 'yes' }}
