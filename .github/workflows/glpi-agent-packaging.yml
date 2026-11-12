@@ -138,6 +138,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+    - name: Check Snap Store reachability
+      run: curl -sS -m 20 -o /dev/null -w 'api.snapcraft.io: HTTP %{http_code} in %{time_total}s\n' https://api.snapcraft.io/ || true
     - uses: g-bougard/snapcraft-multiarch-action@8038048298e41a594aaeed264439782f50b108cd
       id: snapcraft
       timeout-minutes: 20
