@@ -138,12 +138,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-    - name: Check Snap Store reachability
+    - name: Diagnose Snap Store connectivity
       run: |
-        for v in 4 6; do
-          curl -$v -sS -m 20 -o /dev/null \
-            -w "IPv$v: %{remote_ip} -> HTTP %{http_code} in %{time_total}s\n" \
-            https://api.snapcraft.io/ || true
+        echo "Runner public IP: $(curl -4 -s -m 5 https://api.ipify.org || echo unknown)"
+        for ip in $(getent ahostsv4 api.snapcraft.io | awk '{print $1}' | sort -u); do
+          if timeout 3 bash -c "</dev/tcp/$ip/443" 2>/dev/null; then tcp=OK; else tcp=FAIL; fi
+          tls=$(curl -sS -o /dev/null -m 8 --resolve api.snapcraft.io:443:$ip \
+                  -w '%{http_code}' https://api.snapcraft.io/ 2>&1 | tail -1)
+          echo "api.snapcraft.io $ip: TCP $tcp, HTTPS $tls"
+        done
+        for host in launchpad.net login.ubuntu.com; do
+          echo "$host: HTTP $(curl -sS -o /dev/null -m 8 -w '%{http_code}' https://$host/ 2>/dev/null || echo 000)"
         done
       shell: bash
     - name: Wait for Snap Store connectivity
