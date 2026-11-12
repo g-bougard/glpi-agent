@@ -141,6 +141,9 @@ jobs:
     - name: Diagnose Snap Store connectivity
       run: |
         echo "Runner public IP: $(curl -4 -s -m 5 https://api.ipify.org || echo unknown)"
+        echo "getent:"
+        getent ahostsv4 api.snapcraft.io
+        echo ====
         for ip in $(getent ahostsv4 api.snapcraft.io | awk '{print $1}' | sort -u); do
           if timeout 3 bash -c "</dev/tcp/$ip/443" 2>/dev/null; then tcp=OK; else tcp=FAIL; fi
           tls=$(curl -sS -o /dev/null -m 8 --resolve api.snapcraft.io:443:$ip \
