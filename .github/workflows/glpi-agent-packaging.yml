@@ -853,7 +853,7 @@ jobs:
       run: |
         # make -gitXXXXXXXX release when not tagged
         if [ -z "${VERSION##*-*}" ]; then
-            tools/make-release.sh --no-git --no-deb-changelog $VERSION
+            bash -x tools/make-release.sh --no-git --no-deb-changelog $VERSION
         fi
         perl Makefile.PL
         make manifest
